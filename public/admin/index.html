@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Media Manager</title>
+  <link rel="stylesheet" href="/admin/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">Media Manager</span>
+    <button id="logout-btn" class="ghost" hidden>Salir</button>
+  </header>
+
+  <main class="container">
+    <section id="login-view" class="card" hidden>
+      <h1>Iniciar sesión</h1>
+      <form id="login-form">
+        <label>Usuario <input id="login-user" name="username" autocomplete="username" required /></label>
+        <label>Contraseña <input id="login-pass" name="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit">Entrar</button>
+        <p id="login-error" class="error" hidden></p>
+      </form>
+    </section>
+
+    <section id="panel-view" hidden>
+      <section class="card">
+        <h2>Subir archivo</h2>
+        <form id="upload-form">
+          <label>Proyecto (slug) <input id="upload-project" placeholder="ej: hermes" required /></label>
+          <label>Archivo (video o imagen)
+            <input id="upload-file" type="file" accept=".mp4,.webm,.jpg,.jpeg,.png,.webp,.avif" required />
+          </label>
+          <div class="row">
+            <button type="submit">Subir y procesar</button>
+            <span id="upload-status" class="muted"></span>
+          </div>
+          <progress id="upload-progress" max="100" value="0" hidden></progress>
+        </form>
+        <p class="hint">Video → genera preview.webm, preview.mp4, poster.webp y thumbnail.webp. Imagen → cover.webp y thumbnail.webp.</p>
+      </section>
+
+      <section class="card">
+        <h2>Proyectos</h2>
+        <div id="projects-list" class="projects"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="/admin/app.js"></script>
+</body>
+</html>

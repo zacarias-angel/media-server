@@ -1,0 +1,15 @@
+{
+  "name": "media-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --env-file-if-exists=.env --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "file-type": "^22.0.2",
+    "multer": "^2.0.0"
+  }
+}
