@@ -49,6 +49,9 @@ al subir, sin tocar Git ni recompilar Docker.
   `X-Content-Type-Options: nosniff`, `Content-Disposition: inline`, sin listado
   de directorios. Nada de lo subido se ejecuta (`.php/.js/.sh/...` quedan fuera
   por whitelist + magic bytes).
+- Rate limit básico por IP en `/api/login` para frenar fuerza bruta.
+- `/admin` entrega headers de seguridad (`Content-Security-Policy`,
+  `X-Frame-Options`, `Referrer-Policy`, `X-Content-Type-Options`).
 
 ## Variables de entorno
 
@@ -56,9 +59,9 @@ al subir, sin tocar Git ni recompilar Docker.
 |---|---|---|
 | `PORT` | 3000 | Puerto interno |
 | `MEDIA_ROOT` | /srv/media | Raíz del storage |
-| `ERADMIN_US` | admin | Usuario del panel |
+| `ADMIN_USER` | admin | Usuario del panel |
 | `ADMIN_PASSWORD` | — | Contraseña (obligatoria) |
-| `SESSION_SECRET` | — | Secreto para firmar sesiones |
+| `SESSION_SECRET` | — | Secreto para firmar sesiones (obligatorio en producción) |
 | `SESSION_TTL_HOURS` | 12 | Duración de la sesión |
 | `MAX_UPLOAD_MB` | 300 | Tamaño máximo de subida |
 | `COOKIE_SECURE` | true | `Secure` en la cookie (false si probás por http) |
@@ -67,7 +70,7 @@ al subir, sin tocar Git ni recompilar Docker.
 
 ```bash
 npm install
-ADMIN_PASSWORD=prueba SESSION_SECRET=secreto COOKIE_SECURE=false MEDIA_ROOT=./data npm run dev
+ADMIN_PASSWORD=prueba SESSION_SECRET=secreto-largo COOKIE_SECURE=false MEDIA_ROOT=./data npm run dev
 # http://localhost:3000/admin
 ```
 
@@ -77,8 +80,8 @@ ADMIN_PASSWORD=prueba SESSION_SECRET=secreto COOKIE_SECURE=false MEDIA_ROOT=./da
 2. En **Coolify**: `+ New` → Application → conectá el repo → Dockerfile (detecta solo).
    - **Ports Exposes**: `3000`.
    - **Domain**: `https://media.angelzacarias.uk`.
-   - **Environment Variables**: `ADMIN_PASSWORD` (secreto), `SESSION_SECRET` (secreto largo),
-     `ADMIN_USER` (opcional), `MAX_UPLOAD_MB`, `COOKIE_SECURE=true`.
+   - **Environment Variables**: `ADMIN_PASSWORD` (secreto), `SESSION_SECRET` (recomendado: secreto largo),
+     `ADMIN_USER` (opcional), `MAX_UPLOAD_MB`, `COOKIE_SECURE=true`, `MEDIA_ROOT=/srv/media`.
    - **Storages → Add Persistent Storage**:
      - Host path: `/srv/media`
      - Container path: `/srv/media`

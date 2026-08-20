@@ -11,13 +11,16 @@ export function initAuth() {
     adminHash = null
     return
   }
+  if (!config.sessionSecret) {
+    throw new Error('SESSION_SECRET es obligatorio en producción para firmar sesiones.')
+  }
   const salt = crypto.randomBytes(16).toString('hex')
   const hash = crypto.scryptSync(config.adminPassword, salt, 64).toString('hex')
   adminHash = `${salt}:${hash}`
 }
 
 function secret() {
-  return config.sessionSecret || `media-server:${config.adminPassword}`
+  return config.sessionSecret
 }
 
 function hmac(value) {

@@ -11,6 +11,10 @@ import { processVideo, processImage } from '../ffmpeg.js'
 
 const router = Router()
 
+const LOGIN_WINDOW_MS = 15 * 60 * 1000
+const LOGIN_MAX_ATTEMPTS = 10
+const loginAttempts = new Map()
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadsDir()),
@@ -24,6 +28,42 @@ function failUpload(filePath, res, status, error) {
   res.status(status).json({ error })
 }
 
+function clientIp(req) {
+  return req.ip || req.socket?.remoteAddress || 'unknown'
+}
+
+function checkLoginRateLimit(req, res) {
+  const now = Date.now()
+  const ip = clientIp(req)
+  const entry = loginAttempts.get(ip)
+  if (!entry || entry.resetAt <= now) {
+    loginAttempts.set(ip, { count: 0, resetAt: now + LOGIN_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= LOGIN_MAX_ATTEMPTS) {
+    const retryAfter = Math.max(1, Math.ceil((entry.resetAt - now) / 1000))
+    res.setHeader('Retry-After', String(retryAfter))
+    res.status(429).json({ error: 'Demasiados intentos de login. Probá de nuevo más tarde.' })
+    return false
+  }
+  return true
+}
+
+function recordFailedLogin(req) {
+  const now = Date.now()
+  const ip = clientIp(req)
+  const entry = loginAttempts.get(ip)
+  if (!entry || entry.resetAt <= now) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS })
+    return
+  }
+  entry.count += 1
+}
+
+function clearLoginRateLimit(req) {
+  loginAttempts.delete(clientIp(req))
+}
+
 router.get('/me', (req, res) => {
   const user = verifySession(req.cookies?.[COOKIE_NAME])
   if (user === config.adminUser) return res.json({ ok: true, user })
@@ -31,10 +71,13 @@ router.get('/me', (req, res) => {
 })
 
 router.post('/login', (req, res) => {
+  if (!checkLoginRateLimit(req, res)) return
   const { username, password } = req.body || {}
   if (!verifyLogin(username, password)) {
+    recordFailedLogin(req)
     return res.status(401).json({ error: 'Credenciales inválidas' })
   }
+  clearLoginRateLimit(req)
   res.cookie(COOKIE_NAME, signSession(username), cookieOptions())
   res.json({ ok: true, user: username })
 })
