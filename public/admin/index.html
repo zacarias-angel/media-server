@@ -29,7 +29,7 @@
         <form id="upload-form">
           <label>Proyecto (slug) <input id="upload-project" placeholder="ej: hermes" required /></label>
           <label>Archivo (video o imagen)
-            <input id="upload-file" type="file" accept=".webm,.jpg,.jpeg,.png,.webp,.avif" required />
+            <input id="upload-file" type="file" accept=".mp4,.webm,.jpg,.jpeg,.png,.webp,.avif" required />
           </label>
           <div class="row">
             <button type="submit">Subir archivo</button>
@@ -37,7 +37,7 @@
           </div>
           <progress id="upload-progress" max="100" value="0" hidden></progress>
         </form>
-        <p class="hint">Video: subilo ya como <code>preview.webm</code> y se guardará como archivo principal del proyecto. Imagen: se guarda directa con su nombre saneado, sin copias.</p>
+        <p class="hint">Video: subilo ya como <code>.webm</code> o <code>.mp4</code> y se guardará como <code>preview.webm</code> o <code>preview.mp4</code> según corresponda. Imagen: se guarda directa con su nombre saneado, sin copias.</p>
       </section>
 
       <section class="card">

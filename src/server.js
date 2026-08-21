@@ -22,6 +22,7 @@ app.use('/admin', (req, res, next) => {
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Cache-Control', 'no-store')
   next()
 })
 

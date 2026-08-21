@@ -41,8 +41,8 @@ sin tocar Git ni recompilar Docker.
 
 - Whitelist de extensiones: `.mp4 .webm .jpg .jpeg .png .webp .avif`.
 - Validación por magic bytes (`file-type`), no solo por extensión.
-- Los videos deben subirse ya listos como `.webm`; el server los guarda como
-  `preview.webm`.
+- Los videos deben subirse ya listos como `.webm` o `.mp4`; el server los guarda
+  como `preview.webm` o `preview.mp4` según el archivo subido.
 - Tamaño máximo (`MAX_UPLOAD_MB`, default 300 MB).
 - Slug sanitizado (`/^[a-z0-9][a-z0-9_-]{0,63}$/`), sin path traversal.
 - Archivos servidos **solo como datos**: `Content-Type` fijo por extensión,
@@ -106,6 +106,7 @@ ADMIN_PASSWORD=prueba SESSION_SECRET=secreto-largo COOKIE_SECURE=false MEDIA_ROO
 ```html
 <video autoplay muted loop playsinline preload="metadata">
   <source src="https://media.angelzacarias.uk/projects/hermes/preview.webm" type="video/webm" />
+  <source src="https://media.angelzacarias.uk/projects/hermes/preview.mp4" type="video/mp4" />
 </video>
 
 <img src="https://media.angelzacarias.uk/projects/hermes/portada.webp" alt="Portada del proyecto" />
@@ -118,5 +119,5 @@ un `preview.webm` con el mismo nombre, podés forzar refresco con un query strin
 ## Notas
 
 - El server ya no transcodifica ni genera derivados: guarda el archivo final.
-- Para video, subí directamente el `preview.webm` optimizado para web.
+- Para video, subí directamente el archivo final optimizado para web en `.webm` o `.mp4`.
 - Para imágenes, se conserva un nombre saneado a minúsculas para que la URL sea estable.
