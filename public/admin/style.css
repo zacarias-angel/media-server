@@ -91,22 +91,66 @@ progress { width: 100%; }
 
 .projects { display: grid; gap: 14px; }
 
-.project { border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.project { border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
 
-.project-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.project-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 
 .project-head strong { flex: 1; }
 
 .project ul { list-style: none; margin: 0; padding: 0; }
 
+.tree-list {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
 .project li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 0;
+  gap: 12px;
+  padding: 10px 12px;
   border-top: 1px solid var(--border);
   font-size: 13px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.project li:first-child { border-top: 0; }
+
+.file-name {
+  overflow-wrap: anywhere;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.file-actions a,
+.file-actions button {
+  white-space: nowrap;
+}
+
+.copy-url {
+  font-size: 12px;
+  padding: 7px 10px;
+}
+
 button.del, button.del-project { color: var(--danger); background: transparent; border: 0; font-size: 12px; }
+
+@media (max-width: 640px) {
+  .project li,
+  .project-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .file-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+}

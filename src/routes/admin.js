@@ -7,7 +7,6 @@ import { config } from '../config.js'
 import { requireAuth, verifySession, verifyLogin, signSession, cookieOptions, COOKIE_NAME } from '../auth.js'
 import { projectsDir, uploadsDir, isValidSlug, sanitizeSlug, resolveProjectFile } from '../storage.js'
 import { inspectFile, ALLOWED_EXT } from '../validation.js'
-import { processVideo, processImage } from '../ffmpeg.js'
 
 const router = Router()
 
@@ -62,6 +61,29 @@ function recordFailedLogin(req) {
 
 function clearLoginRateLimit(req) {
   loginAttempts.delete(clientIp(req))
+}
+
+function sanitizeUploadBaseName(name, fallback) {
+  const base = path.basename(name || '', path.extname(name || ''))
+  const safe = base
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64)
+  return safe || fallback
+}
+
+function targetFileName(file, info) {
+  if (info.kind === 'video') {
+    if (info.ext !== 'webm') {
+      return { ok: false, error: 'Los videos deben subirse ya en formato .webm' }
+    }
+    return { ok: true, name: 'preview.webm' }
+  }
+
+  const base = sanitizeUploadBaseName(file.originalname, 'image')
+  return { ok: true, name: `${base}.${info.ext}` }
 }
 
 router.get('/me', (req, res) => {
@@ -129,35 +151,24 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   const project = sanitizeSlug(req.body.project)
   if (!project) return failUpload(req.file.path, res, 400, 'Nombre de proyecto inválido')
 
-  let outDir = null
   try {
     const info = await inspectFile(req.file.path)
     if (!info.ok) return failUpload(req.file.path, res, 415, info.error)
 
+    const target = targetFileName(req.file, info)
+    if (!target.ok) return failUpload(req.file.path, res, 400, target.error)
+
     const projectDir = path.join(projectsDir(), project)
     fs.mkdirSync(projectDir, { recursive: true })
 
-    outDir = path.join(uploadsDir(), crypto.randomUUID())
-    fs.mkdirSync(outDir, { recursive: true })
+    const destination = path.join(projectDir, target.name)
+    fs.rmSync(destination, { force: true })
+    fs.renameSync(req.file.path, destination)
 
-    if (info.kind === 'video') await processVideo(req.file.path, outDir)
-    else await processImage(req.file.path, outDir)
-
-    const created = []
-    for (const name of fs.readdirSync(outDir)) {
-      fs.renameSync(path.join(outDir, name), path.join(projectDir, name))
-      created.push(name)
-    }
-    created.sort()
-
-    fs.rmSync(outDir, { recursive: true, force: true })
-    fs.rmSync(req.file.path, { force: true })
-
-    res.json({ ok: true, project, files: created })
+    res.json({ ok: true, project, files: [target.name] })
   } catch (err) {
     console.error('[upload] error:', err)
-    if (outDir) fs.rmSync(outDir, { recursive: true, force: true })
-    failUpload(req.file.path, res, 500, `Error de procesamiento: ${err.message || err}`)
+    failUpload(req.file.path, res, 500, `Error al guardar el archivo: ${err.message || err}`)
   }
 })
 

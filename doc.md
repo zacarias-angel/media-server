@@ -1,13 +1,12 @@
 # Media Server — Documentación
 
 Servidor propio para subir y servir imágenes/videos de proyectos. Pensado para
-previews de porfolio: genera WebM/VP9 + MP4/H.264 + poster + thumbnail con FFmpeg
-al subir, sin tocar Git ni recompilar Docker.
+previews de porfolio: guarda el media final directamente en el filesystem,
+sin tocar Git ni recompilar Docker.
 
 ## Stack
 
 - Node 22 (ESM) + Express + Multer + `file-type` (detección por magic bytes)
-- FFmpeg (instalado en la imagen Alpine)
 - Sin base de datos: el filesystem es la metadata
 - Auth: un solo usuario admin, sesión por cookie firmada (HMAC)
 
@@ -17,12 +16,11 @@ al subir, sin tocar Git ni recompilar Docker.
 /srv/media/
 ├── projects/
 │   ├── hermes/
-│   │   ├── preview.webm      (VP9, preferente)
-│   │   ├── preview.mp4       (H.264, fallback)
-│   │   ├── poster.webp
-│   │   └── thumbnail.webp
+│   │   ├── preview.webm      (video principal, si existe)
+│   │   ├── portada.webp      (imagen directa, si existe)
+│   │   └── mobile-cover.jpg  (imagen directa, si existe)
 │   └── ...
-└── uploads/                  (temporal, se limpia tras procesar)
+└── uploads/                  (temporal durante la subida)
 ```
 
 ## Rutas
@@ -43,6 +41,8 @@ al subir, sin tocar Git ni recompilar Docker.
 
 - Whitelist de extensiones: `.mp4 .webm .jpg .jpeg .png .webp .avif`.
 - Validación por magic bytes (`file-type`), no solo por extensión.
+- Los videos deben subirse ya listos como `.webm`; el server los guarda como
+  `preview.webm`.
 - Tamaño máximo (`MAX_UPLOAD_MB`, default 300 MB).
 - Slug sanitizado (`/^[a-z0-9][a-z0-9_-]{0,63}$/`), sin path traversal.
 - Archivos servidos **solo como datos**: `Content-Type` fijo por extensión,
@@ -104,11 +104,11 @@ ADMIN_PASSWORD=prueba SESSION_SECRET=secreto-largo COOKIE_SECURE=false MEDIA_ROO
 ## Uso desde el porfolio
 
 ```html
-<video autoplay muted loop playsinline preload="metadata"
-       poster="https://media.angelzacarias.uk/projects/hermes/poster.webp">
+<video autoplay muted loop playsinline preload="metadata">
   <source src="https://media.angelzacarias.uk/projects/hermes/preview.webm" type="video/webm" />
-  <source src="https://media.angelzacarias.uk/projects/hermes/preview.mp4" type="video/mp4" />
 </video>
+
+<img src="https://media.angelzacarias.uk/projects/hermes/portada.webp" alt="Portada del proyecto" />
 ```
 
 Ojo con el caché: los archivos usan `Cache-Control: max-age=86400`. Si re-subís
@@ -117,8 +117,6 @@ un `preview.webm` con el mismo nombre, podés forzar refresco con un query strin
 
 ## Notas
 
-- El transcode a VP9 es CPU-intensivo. Si un VPS chico tarda mucho, podés:
-  - subir `.webm` ya codificado en VP9 (se salta la re-codificación de ese formato), o
-  - bajar la resolución editando `SCALE_VIDEO` en `src/ffmpeg.js`.
-- Si `preview.webm` falla (por falta de libvpx), el servidor lo omite y entrega
-  igual `preview.mp4` + poster + thumbnail.
+- El server ya no transcodifica ni genera derivados: guarda el archivo final.
+- Para video, subí directamente el `preview.webm` optimizado para web.
+- Para imágenes, se conserva un nombre saneado a minúsculas para que la URL sea estable.

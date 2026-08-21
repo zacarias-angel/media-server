@@ -19,6 +19,33 @@ function show(view) {
   $('logout-btn').hidden = view !== 'panel'
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]))
+}
+
+function fileUrl(project, file) {
+  return `${location.origin}/projects/${encodeURIComponent(project)}/${encodeURIComponent(file)}`
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+  const input = document.createElement('input')
+  input.value = text
+  document.body.appendChild(input)
+  input.select()
+  document.execCommand('copy')
+  input.remove()
+}
+
 async function refreshProjects() {
   const { projects } = await api('/api/projects')
   const list = $('projects-list')
@@ -31,15 +58,24 @@ async function refreshProjects() {
     const el = document.createElement('div')
     el.className = 'project'
     const files = p.files
-      .map((f) => `<li><span>${f}</span><button data-project="${p.project}" data-file="${f}" class="del">Borrar</button></li>`)
+      .map((f) => {
+        const url = fileUrl(p.project, f)
+        return `<li class="tree-file">
+          <span class="file-name">${escapeHtml(f)}</span>
+          <div class="file-actions">
+            <a class="muted" href="${url}" target="_blank" rel="noreferrer">abrir</a>
+            <button class="ghost copy-url" data-url="${url}">Copy URL</button>
+            <button data-project="${encodeURIComponent(p.project)}" data-file="${encodeURIComponent(f)}" class="del">Borrar</button>
+          </div>
+        </li>`
+      })
       .join('')
     el.innerHTML = `
       <div class="project-head">
-        <strong>${p.project}</strong>
-        <a class="muted" href="/projects/${p.project}/${p.files[0] || ''}" target="_blank">ver</a>
+        <strong>${escapeHtml(p.project)}/</strong>
         <button class="ghost del-project" data-project="${p.project}">Borrar proyecto</button>
       </div>
-      <ul>${files || '<li class="muted">sin archivos</li>'}</ul>`
+      <ul class="tree-list">${files || '<li class="muted">sin archivos</li>'}</ul>`
     list.appendChild(el)
   }
 }
@@ -87,7 +123,7 @@ function handleUpload(e) {
     if (ev.lengthComputable) progress.value = Math.round((ev.loaded / ev.total) * 100)
   }
   xhr.upload.onload = () => {
-    status.textContent = 'Procesando con FFmpeg…'
+    status.textContent = 'Guardando…'
   }
   xhr.onload = () => {
     let data = {}
@@ -109,7 +145,7 @@ function handleUpload(e) {
 
 async function handleDeleteFile(project, file) {
   if (!confirm(`¿Borrar ${project}/${file}?`)) return
-  await api(`/api/projects/${project}/${file}`, { method: 'DELETE' })
+  await api(`/api/projects/${encodeURIComponent(project)}/${encodeURIComponent(file)}`, { method: 'DELETE' })
   refreshProjects()
 }
 
@@ -119,6 +155,22 @@ async function handleDeleteProject(project) {
   refreshProjects()
 }
 
+async function handleCopyUrl(url, button) {
+  const original = button.textContent
+  try {
+    await copyText(url)
+    button.textContent = 'Copiado'
+    setTimeout(() => {
+      button.textContent = original
+    }, 1200)
+  } catch {
+    button.textContent = 'Error'
+    setTimeout(() => {
+      button.textContent = original
+    }, 1200)
+  }
+}
+
 $('login-form').addEventListener('submit', handleLogin)
 $('upload-form').addEventListener('submit', handleUpload)
 $('logout-btn').addEventListener('click', async () => {
@@ -126,8 +178,10 @@ $('logout-btn').addEventListener('click', async () => {
   show('login')
 })
 $('projects-list').addEventListener('click', (e) => {
+  const copy = e.target.closest('.copy-url')
+  if (copy) return handleCopyUrl(copy.dataset.url, copy)
   const del = e.target.closest('.del')
-  if (del) return handleDeleteFile(del.dataset.project, del.dataset.file)
+  if (del) return handleDeleteFile(decodeURIComponent(del.dataset.project), decodeURIComponent(del.dataset.file))
   const delProject = e.target.closest('.del-project')
   if (delProject) return handleDeleteProject(delProject.dataset.project)
 })
