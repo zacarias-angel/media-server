@@ -132,4 +132,7 @@ $('projects-list').addEventListener('click', (e) => {
   if (delProject) return handleDeleteProject(delProject.dataset.project)
 })
 
-api('/api/me').then(enterPanel).catch(() => show('login'))
+api('/api/me').then(({ ok }) => {
+  if (ok) enterPanel()
+  else show('login')
+}).catch(() => show('login'))

@@ -18,12 +18,14 @@ app.set('trust proxy', true)
 app.use(express.json({ limit: '1mb' }))
 
 app.use('/admin', (req, res, next) => {
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('X-Content-Type-Options', 'nosniff')
   next()
 })
+
+app.get('/favicon.ico', (_req, res) => res.status(204).end())
 
 app.use((req, _res, next) => {
   req.cookies = {}

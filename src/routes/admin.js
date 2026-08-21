@@ -67,7 +67,7 @@ function clearLoginRateLimit(req) {
 router.get('/me', (req, res) => {
   const user = verifySession(req.cookies?.[COOKIE_NAME])
   if (user === config.adminUser) return res.json({ ok: true, user })
-  res.status(401).json({ ok: false })
+  res.json({ ok: false })
 })
 
 router.post('/login', (req, res) => {
