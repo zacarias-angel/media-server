@@ -1,5 +1,7 @@
 const $ = (id) => document.getElementById(id)
 
+let currentProjects = []
+
 async function api(path, opts = {}) {
   const headers = opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }
   const res = await fetch(path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } })
@@ -48,6 +50,11 @@ async function copyText(text) {
 
 async function refreshProjects() {
   const { projects } = await api('/api/projects')
+  currentProjects = projects
+  renderProjects(projects)
+}
+
+function renderProjects(projects) {
   const list = $('projects-list')
   list.innerHTML = ''
   if (!projects.length) {
@@ -78,6 +85,22 @@ async function refreshProjects() {
       <ul class="tree-list">${files || '<li class="muted">sin archivos</li>'}</ul>`
     list.appendChild(el)
   }
+}
+
+function upsertProject(project, file) {
+  const next = currentProjects.map((entry) => ({ ...entry, files: [...entry.files] }))
+  const existing = next.find((entry) => entry.project === project)
+
+  if (existing) {
+    if (!existing.files.includes(file)) existing.files.push(file)
+    existing.files.sort()
+  } else {
+    next.push({ project, files: [file] })
+    next.sort((a, b) => a.project.localeCompare(b.project))
+  }
+
+  currentProjects = next
+  renderProjects(next)
 }
 
 async function handleLogin(e) {
@@ -130,9 +153,16 @@ function handleUpload(e) {
     try { data = JSON.parse(xhr.responseText) } catch {}
     progress.hidden = true
     if (xhr.status >= 200 && xhr.status < 300) {
-      status.textContent = 'Listo.'
+      if (data.project && data.file) upsertProject(data.project, data.file)
+      status.textContent = data.project && data.file ? `Listo: ${data.project}/${data.file}` : 'Listo.'
       fileInput.value = ''
-      refreshProjects().catch(console.error)
+      refreshProjects().catch(() => {
+        if (data.project && data.file) {
+          status.textContent = `Listo: ${data.project}/${data.file}. No se pudo refrescar la lista completa.`
+        } else {
+          status.textContent = 'Listo, pero no se pudo refrescar la lista.'
+        }
+      })
     } else {
       status.textContent = 'Error: ' + (data.error || xhr.statusText)
     }

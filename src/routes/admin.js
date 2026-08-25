@@ -86,6 +86,41 @@ function targetFileName(file, info) {
   return { ok: true, name: `${base}.${info.ext}` }
 }
 
+function listProjects() {
+  const dir = projectsDir()
+  if (!fs.existsSync(dir)) return []
+
+  const out = []
+  for (const name of fs.readdirSync(dir)) {
+    if (!isValidSlug(name)) continue
+
+    const projectPath = path.join(dir, name)
+    let projectStat
+    try {
+      projectStat = fs.statSync(projectPath)
+    } catch {
+      continue
+    }
+    if (!projectStat.isDirectory()) continue
+
+    const files = []
+    for (const entry of fs.readdirSync(projectPath)) {
+      const filePath = path.join(projectPath, entry)
+      try {
+        if (fs.statSync(filePath).isFile()) files.push(entry)
+      } catch {
+        continue
+      }
+    }
+
+    files.sort()
+    out.push({ project: name, files })
+  }
+
+  out.sort((a, b) => a.project.localeCompare(b.project))
+  return out
+}
+
 router.get('/me', (req, res) => {
   const user = verifySession(req.cookies?.[COOKIE_NAME])
   if (user === config.adminUser) return res.json({ ok: true, user })
@@ -110,18 +145,7 @@ router.post('/logout', (_req, res) => {
 })
 
 router.get('/projects', requireAuth, (_req, res) => {
-  const dir = projectsDir()
-  if (!fs.existsSync(dir)) return res.json({ projects: [] })
-  const out = []
-  for (const name of fs.readdirSync(dir)) {
-    if (!isValidSlug(name)) continue
-    const p = path.join(dir, name)
-    if (!fs.statSync(p).isDirectory()) continue
-    const files = fs.readdirSync(p).filter((f) => fs.statSync(path.join(p, f)).isFile()).sort()
-    out.push({ project: name, files })
-  }
-  out.sort((a, b) => a.project.localeCompare(b.project))
-  res.json({ projects: out })
+  res.json({ projects: listProjects() })
 })
 
 router.delete('/projects/:project', requireAuth, (req, res) => {
@@ -165,7 +189,8 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
     fs.rmSync(destination, { force: true })
     fs.renameSync(req.file.path, destination)
 
-    res.json({ ok: true, project, files: [target.name] })
+    const url = `/projects/${encodeURIComponent(project)}/${encodeURIComponent(target.name)}`
+    res.json({ ok: true, project, file: target.name, files: [target.name], url })
   } catch (err) {
     console.error('[upload] error:', err)
     failUpload(req.file.path, res, 500, `Error al guardar el archivo: ${err.message || err}`)
