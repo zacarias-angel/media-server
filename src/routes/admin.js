@@ -75,14 +75,7 @@ function sanitizeUploadBaseName(name, fallback) {
 }
 
 function targetFileName(file, info) {
-  if (info.kind === 'video') {
-    if (info.ext !== 'webm' && info.ext !== 'mp4') {
-      return { ok: false, error: 'Los videos deben subirse en formato .webm o .mp4' }
-    }
-    return { ok: true, name: `preview.${info.ext}` }
-  }
-
-  const base = sanitizeUploadBaseName(file.originalname, 'image')
+  const base = sanitizeUploadBaseName(file.originalname, 'file')
   return { ok: true, name: `${base}.${info.ext}` }
 }
 

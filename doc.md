@@ -16,9 +16,9 @@ sin tocar Git ni recompilar Docker.
 /srv/media/
 ├── projects/
 │   ├── hermes/
-│   │   ├── preview.webm      (video principal, si existe)
-│   │   ├── portada.webp      (imagen directa, si existe)
-│   │   └── mobile-cover.jpg  (imagen directa, si existe)
+│   │   ├── intro.webm        (video, si existe)
+│   │   ├── portada.webp      (imagen, si existe)
+│   │   └── mobile-cover.jpg  (imagen, si existe)
 │   └── ...
 └── uploads/                  (temporal durante la subida)
 ```
@@ -41,8 +41,8 @@ sin tocar Git ni recompilar Docker.
 
 - Whitelist de extensiones: `.mp4 .webm .jpg .jpeg .png .webp .avif`.
 - Validación por magic bytes (`file-type`), no solo por extensión.
-- Los videos deben subirse ya listos como `.webm` o `.mp4`; el server los guarda
-  como `preview.webm` o `preview.mp4` según el archivo subido.
+- Los videos deben subirse ya listos como `.webm` o `.mp4`.
+- El server conserva cada archivo con un nombre saneado y estable en minúsculas.
 - Tamaño máximo (`MAX_UPLOAD_MB`, default 300 MB).
 - Slug sanitizado (`/^[a-z0-9][a-z0-9_-]{0,63}$/`), sin path traversal.
 - Archivos servidos **solo como datos**: `Content-Type` fijo por extensión,
@@ -105,19 +105,19 @@ ADMIN_PASSWORD=prueba SESSION_SECRET=secreto-largo COOKIE_SECURE=false MEDIA_ROO
 
 ```html
 <video autoplay muted loop playsinline preload="metadata">
-  <source src="https://media.angelzacarias.uk/projects/hermes/preview.webm" type="video/webm" />
-  <source src="https://media.angelzacarias.uk/projects/hermes/preview.mp4" type="video/mp4" />
+  <source src="https://media.angelzacarias.uk/projects/hermes/intro.webm" type="video/webm" />
+  <source src="https://media.angelzacarias.uk/projects/hermes/intro.mp4" type="video/mp4" />
 </video>
 
 <img src="https://media.angelzacarias.uk/projects/hermes/portada.webp" alt="Portada del proyecto" />
 ```
 
 Ojo con el caché: los archivos usan `Cache-Control: max-age=86400`. Si re-subís
-un `preview.webm` con el mismo nombre, podés forzar refresco con un query string
-(`preview.webm?v=2`) o purgar el caché de Cloudflare.
+un archivo con el mismo nombre, podés forzar refresco con un query string
+(`intro.webm?v=2`) o purgar el caché de Cloudflare.
 
 ## Notas
 
 - El server ya no transcodifica ni genera derivados: guarda el archivo final.
 - Para video, subí directamente el archivo final optimizado para web en `.webm` o `.mp4`.
-- Para imágenes, se conserva un nombre saneado a minúsculas para que la URL sea estable.
+- Para imágenes y videos, se conserva un nombre saneado a minúsculas para que la URL sea estable.
